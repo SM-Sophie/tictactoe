@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
 
 
 
@@ -31,37 +32,6 @@ void printBoard(){
     }
 }
 
-void makeMove(struct player p){
-    int r;
-    int c;
-    if (p.isHuman == true){
-    while (1){
-        printf("Wähle ein Feld\n");
-        scanf("%d %d", &r, &c);
-        if (r < 0 || r > 2 || c < 0 || c > 2) {
-            printf("Ungültige Eingabe! Werte müssen zwischen 0 und 2 liegen.\n\n");            
-            continue;
-        }
-        if (board[r][c] != ' '){
-            printf("Bitte wähle ein anderes Feld\n\n");
-            continue;
-        }
-   
-        board[r][c] = p.symbol;
-        break;
-    
-    }}
-    else{
-            while (1) {
-                printf("Der Bot setzt einen Zug...\n");
-                r = rand() % 3;
-                c = rand() % 3;
-                if (board[r][c] == ' ') {
-                    board[r][c] = p.symbol;
-                    break;
-                }
-    }
-}}
 
 bool checkWin() {
     for (int i = 0; i < 3; i++) {
@@ -86,6 +56,93 @@ bool isBoardFull(){
     }
     return true;
 }
+
+
+int minimax(bool isMaximizing) {
+    // Check for terminal states
+    if (checkWin('X')) return 10;
+    if (checkWin('O')) return -10;
+    if (isBoardFull()) return 0;
+
+    if (isMaximizing) {
+        int bestScore = -INT_MAX;
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                if (board[i][j] == ' ') {
+                    board[i][j] = 'X';
+                    int score = minimax(false);
+                    board[i][j] = ' ';
+                    bestScore = (score > bestScore) ? score : bestScore;
+                }
+            }
+        }
+        return bestScore;
+    } else {
+        int bestScore = INT_MAX;
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                if (board[i][j] == ' ') {
+                    board[i][j] = 'O';
+                    int score = minimax(true);
+                    board[i][j] = ' ';
+                    bestScore = (score < bestScore) ? score : bestScore;
+                }
+            }
+        }
+        return bestScore;
+    }
+}
+
+void makeAIMove(struct player p) {
+    int bestScore = -INT_MAX;
+    int bestRow = -1, bestCol = -1;
+
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            if (board[i][j] == ' ') {
+                board[i][j] = 'X';
+                int score = minimax(false);
+                board[i][j] = ' ';
+
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestRow = i;
+                    bestCol = j;
+                }
+            }
+        }
+    }
+
+    board[bestRow][bestCol] = p.symbol;
+    printf("Computer wählt Position %d %d\n", bestRow, bestCol);
+}
+
+void makeMove(struct player p) {
+    if (p.isHuman) {
+        int r, c;
+        while (1) {
+            printf("Spieler %c: Wähle ein Feld (Reihe Spalte): ", p.symbol);
+            scanf("%d %d", &r, &c);
+
+            if (r < 0 || r > 2 || c < 0 || c > 2) {
+                printf("Ungültige Eingabe! Werte müssen zwischen 0 und 2 liegen.\n");
+                continue;
+            }
+
+            if (board[r][c] != ' ') {
+                printf("Feld bereits belegt! Wähle ein anderes.\n");
+                continue;
+            }
+
+            board[r][c] = p.symbol;
+            break;
+        }
+    } else {
+        makeAIMove(p);
+    }
+}
+
+
 
 
 
